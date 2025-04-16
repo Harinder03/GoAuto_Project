@@ -12,7 +12,8 @@ st.set_page_config(page_title="Car Sales App", layout="wide")
 # Load data
 @st.cache_data
 def load_data():
-    return pd.read_csv("Final_dataset.csv")
+    url = "https://drive.google.com/uc?export=download&id=1ELFg0FB42MzAHAgWkERFuvn45d8S-pBh"
+    return pd.read_csv(url)
 
 df = load_data()
 
