@@ -1,0 +1,14 @@
+# Core packages
+streamlit>=1.30.0
+pandas>=1.5.0
+numpy>=1.23.0
+
+# Geospatial and map rendering
+folium>=0.14.0
+streamlit-folium>=0.11.0
+
+# For embedding external content like Power BI
+streamlit.components.v1
+
+# Optional for visual formatting (if using df styling or tooltips)
+matplotlib>=3.6.0
