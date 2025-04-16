@@ -66,7 +66,7 @@ elif menu == "Model":
     # Column visibility toggles
     with st.expander("Toggle Column Visibility", expanded=True):
         left_col_visible = st.checkbox("<< Show Filters", value=True)
-        right_col_visible = st.checkbox(">> Show Tables", value=True)
+        right_col_visible = st.checkbox(">> Show Tables", value=False)
 
     # Determine layout widths
     if left_col_visible and right_col_visible:
