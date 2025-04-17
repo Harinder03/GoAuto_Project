@@ -17,10 +17,23 @@ def load_data():
 
 df = load_data()
 
+# Initialize session_state for filters
+for key, default in {
+    'selected_type': [],
+    'selected_engine': [],
+    'selected_drivetrain': [],
+    'selected_make': [],
+    'price_range': (10000, 80000),
+    'exclude_autocanada': False,
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
+
 # Sidebar navigation
 st.sidebar.title("Navigation")
 menu = st.sidebar.radio("Go to", ["Overview", "Analysis", "Model", "About"])
 
+# Overview tab
 if menu == "Overview":
     st.title("🚗 Edmonton Car Sales Insights")
     st.markdown("#### 📍 Your data-driven hub for understanding car sales trends across Edmonton")
@@ -34,9 +47,7 @@ Whether you're a business analyst, dealership manager, or student, this tool hel
 - 🗺️ Visualize dealership **clusters** and performance
 - 📉 Analyze **pricing**, **mileage**, and most-sold models
 - 🏆 Discover top-selling **dealers** and **brands**
-
 ---
-
 #### 🚀 Quick Stats
     """)
 
@@ -48,7 +59,7 @@ Whether you're a business analyst, dealership manager, or student, this tool hel
     st.success("👉 Head to the **'Model' tab** to explore clusters and interactive mapping.")
     st.info("Use the **filters** in the 'Model' tab to focus on specific makes, price ranges, or regions.")
 
-
+# Analysis tab
 elif menu == "Analysis":
     st.title("📊 Analysis")
     st.markdown("Visual and statistical analysis of car sales data is presented below.")
@@ -60,6 +71,7 @@ elif menu == "Analysis":
     powerbi_url = "https://app.powerbi.com/reportEmbed?reportId=760b6d9f-a087-4501-8d7a-64e28f840607&autoAuth=true&ctid=2ba011f1-f50a-44f3-a200-db3ea74e29b7"
     components.iframe(src=powerbi_url, width=1100, height=700, scrolling=True)
 
+# Model tab
 elif menu == "Model":
     st.title("Clustering Model Dashboard")
 
@@ -80,16 +92,34 @@ elif menu == "Model":
 
     layout = st.columns(col_widths)
 
-    # Left Column: Filters
+    # Left Column: Filters (store in session_state)
     if left_col_visible:
         with layout[0]:
             st.markdown("### :mag: Additional Filters")
-            selected_type = st.multiselect("Type", options=df['stock_type'].unique())
-            selected_engine = st.multiselect("Engine", options=df['engine_from_vin'].unique())
-            selected_drivetrain = st.multiselect("Drivetrain", options=df['drivetrain_from_vin'].unique())
-            selected_make = st.multiselect("Make", options=df['make'].unique())
-            price_range = st.slider("💲 Price Range", 5000, 100000, (10000, 80000))
-            exclude_autocanada = st.checkbox("Exclude AutoCanada", value=False)
+            st.session_state.selected_type = st.multiselect("Type", options=df['stock_type'].unique(), default=st.session_state.selected_type)
+            st.session_state.selected_engine = st.multiselect("Engine", options=df['engine_from_vin'].unique(), default=st.session_state.selected_engine)
+            st.session_state.selected_drivetrain = st.multiselect("Drivetrain", options=df['drivetrain_from_vin'].unique(), default=st.session_state.selected_drivetrain)
+            st.session_state.selected_make = st.multiselect("Make", options=df['make'].unique(), default=st.session_state.selected_make)
+            st.session_state.price_range = st.slider("💲 Price Range", 5000, 100000, st.session_state.price_range)
+            st.session_state.exclude_autocanada = st.checkbox("Exclude AutoCanada", value=st.session_state.exclude_autocanada)
+
+    # Filter dataset based on session_state filters
+    filtered_df = df.copy()
+    filtered_df = filtered_df[
+        (filtered_df['price'] >= st.session_state.price_range[0]) &
+        (filtered_df['price'] <= st.session_state.price_range[1])
+    ]
+    if st.session_state.selected_type:
+        filtered_df = filtered_df[filtered_df['stock_type'].isin(st.session_state.selected_type)]
+    if st.session_state.selected_engine:
+        filtered_df = filtered_df[filtered_df['engine_from_vin'].isin(st.session_state.selected_engine)]
+    if st.session_state.selected_drivetrain:
+        filtered_df = filtered_df[filtered_df['drivetrain_from_vin'].isin(st.session_state.selected_drivetrain)]
+    if st.session_state.selected_make:
+        filtered_df = filtered_df[filtered_df['make'].isin(st.session_state.selected_make)]
+    if st.session_state.exclude_autocanada:
+        filtered_df = filtered_df[~filtered_df['dealer_name'].str.contains("AutoCanada", case=False)]
+
     else:
         # Default price range when filter is hidden
         price_range = (10000, 80000)
@@ -172,24 +202,7 @@ elif menu == "Model":
             with kpi_selected_2:
                 st.markdown("**Top Make**")
                 st.markdown(f"<h2 style='text-align: center; color: #FF6347;'>{top_make_selected}</h2>", unsafe_allow_html=True)
-            
-            # Apply filters
-            filtered_df = df.copy()
-            filtered_df = filtered_df[(filtered_df['price'] >= price_range[0]) & (filtered_df['price'] <= price_range[1])]
-            if selected_clusters:
-                filtered_df = filtered_df[filtered_df['Cluster'].isin(selected_clusters)]
-            if left_col_visible:
-                if selected_type:
-                    filtered_df = filtered_df[filtered_df['stock_type'].isin(selected_type)]
-                if selected_engine:
-                    filtered_df = filtered_df[filtered_df['engine_from_vin'].isin(selected_engine)]
-                if selected_drivetrain:
-                    filtered_df = filtered_df[filtered_df['drivetrain_from_vin'].isin(selected_drivetrain)]
-                if selected_make:
-                    filtered_df = filtered_df[filtered_df['make'].isin(selected_make)]
-                if exclude_autocanada:
-                    filtered_df = filtered_df[~filtered_df['dealer_name'].str.contains("AutoCanada", case=False)]
-        
+
         with tab2:
             # Map rendering
             st.subheader(":world_map: Clustered Regional Map")
